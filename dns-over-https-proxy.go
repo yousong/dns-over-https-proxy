@@ -22,6 +22,7 @@ import (
 
 var (
 	address = flag.String("address", ":53", "Address to listen to (TCP and UDP)")
+	subnet  = flag.String("subnet", "", "edns-subnet-client argument to pass")
 
 	defaultServer = flag.String("default", "https://dns.google.com/resolve",
 		"DNS-over-HTTPS service endpoint")
@@ -201,7 +202,9 @@ func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) {
 	qry.Add("name", req.Question[0].Name)
 	qry.Add("type", fmt.Sprintf("%v", req.Question[0].Qtype))
 	// qry.Add("cd", cdFlag) // Google DNS-over-HTTPS requires CD to be true - don't set it at all
-	qry.Add("edns_client_subnet", "0.0.0.0/0")
+	if len(*subnet) > 0 {
+		qry.Add("edns_client_subnet", *subnet)
+	}
 	httpreq.URL.RawQuery = qry.Encode()
 
 	if *debug {
