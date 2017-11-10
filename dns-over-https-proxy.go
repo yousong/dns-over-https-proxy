@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"github.com/miekg/dns"
 	"github.com/wrouesnel/go.log"
-	"net"
 	"net/http"
 )
 
@@ -69,9 +68,6 @@ type DNSRR struct {
 
 // Initialize a new RRGeneric from a DNSRR
 func NewRR(a DNSRR) dns.RR {
-	var rr dns.RR
-
-	// Build an RR header
 	rrhdr := dns.RR_Header{
 		Name:     a.Name,
 		Rrtype:   uint16(a.Type),
@@ -79,24 +75,8 @@ func NewRR(a DNSRR) dns.RR {
 		Ttl:      uint32(a.TTL),
 		Rdlength: uint16(len(a.Data)),
 	}
-
-	constructor, ok := dns.TypeToRR[uint16(a.Type)]
-	if ok {
-		// Construct a new RR
-		rr = constructor()
-		*(rr.Header()) = rrhdr
-		switch v := rr.(type) {
-		case *dns.A:
-			v.A = net.ParseIP(a.Data)
-		case *dns.AAAA:
-			v.AAAA = net.ParseIP(a.Data)
-		}
-	} else {
-		rr = dns.RR(&dns.RFC3597{
-			Hdr:   rrhdr,
-			Rdata: a.Data,
-		})
-	}
+	str := rrhdr.String() + a.Data
+	rr, _ := dns.NewRR(str)
 	return rr
 }
 
