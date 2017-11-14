@@ -116,6 +116,9 @@ func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) {
 	qry := httpreq.URL.Query()
 	qry.Add("name", req.Question[0].Name)
 	qry.Add("type", fmt.Sprintf("%v", req.Question[0].Qtype))
+	if req.CheckingDisabled {
+		qry.Add("cd", "1")
+	}
 	if ednsOpt := req.IsEdns0(); ednsOpt != nil {
 		for _, s := range ednsOpt.Option {
 			switch e := s.(type) {
