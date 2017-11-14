@@ -3,21 +3,21 @@ dns-over-https-proxy is a DNS proxy server to serve DNS via the Google
 HTTPS DNS endpoint.
 
 Usage:
-go run dns_reverse_proxy.go -debug=true -address=127.0.0.1:8500 -log.level=debug
+go run dns_reverse_proxy.go -debug=true -address=127.0.0.1:8500
 */
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"encoding/json"
-	"fmt"
 	"github.com/miekg/dns"
-	"github.com/wrouesnel/go.log"
-	"net/http"
 )
 
 var (
@@ -108,7 +108,7 @@ func route(w dns.ResponseWriter, req *dns.Msg) {
 func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) {
 	httpreq, err := http.NewRequest(http.MethodGet, *defaultServer, nil)
 	if err != nil {
-		log.Errorln("Error setting up request:", err)
+		log.Println("Error setting up request:", err)
 		dns.HandleFailed(w, req)
 		return
 	}
@@ -133,12 +133,12 @@ func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) {
 	httpreq.URL.RawQuery = qry.Encode()
 
 	if *debug {
-		log.Debugln(httpreq.URL.String())
+		log.Println(httpreq.URL.String())
 	}
 
 	httpresp, err := http.DefaultClient.Do(httpreq)
 	if err != nil {
-		log.Errorln("Error sending DNS response:", err)
+		log.Println("Error sending DNS response:", err)
 		dns.HandleFailed(w, req)
 		return
 	}
@@ -149,7 +149,7 @@ func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) {
 	decoder := json.NewDecoder(httpresp.Body)
 	err = decoder.Decode(&dnsResp)
 	if err != nil {
-		log.Errorln("Malformed JSON DNS response:", err)
+		log.Println("Malformed JSON DNS response:", err)
 		dns.HandleFailed(w, req)
 		return
 	}
@@ -206,6 +206,6 @@ func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) {
 	// Write the response
 	err = w.WriteMsg(&resp)
 	if err != nil {
-		log.Errorln("Error writing DNS response:", err)
+		log.Println("Error writing DNS response:", err)
 	}
 }
