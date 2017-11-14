@@ -116,7 +116,15 @@ func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) {
 	qry := httpreq.URL.Query()
 	qry.Add("name", req.Question[0].Name)
 	qry.Add("type", fmt.Sprintf("%v", req.Question[0].Qtype))
-	if len(*subnet) > 0 {
+	if ednsOpt := req.IsEdns0(); ednsOpt != nil {
+		for _, s := range ednsOpt.Option {
+			switch e := s.(type) {
+			case *dns.EDNS0_SUBNET:
+				subnet := fmt.Sprintf("%s/%d", e.Address, e.SourceNetmask)
+				qry.Add("edns_client_subnet", subnet)
+			}
+		}
+	} else if len(*subnet) > 0 {
 		qry.Add("edns_client_subnet", *subnet)
 	}
 	httpreq.URL.RawQuery = qry.Encode()
