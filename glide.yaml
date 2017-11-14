@@ -1,4 +1,3 @@
 package: dns-over-https-proxy
 import:
 - package: github.com/miekg/dns
-- package: github.com/wrouesnel/go.log
