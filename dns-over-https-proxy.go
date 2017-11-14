@@ -27,16 +27,7 @@ var (
 	defaultServer = flag.String("default", "https://dns.google.com/resolve",
 		"DNS-over-HTTPS service endpoint")
 
-	//routeList = flag.String("route", "",
-	//	"List of routes where to send queries (subdomain=IP:port)")
-	//routes map[string]string
-
-	//allowTransfer = flag.String("allow-transfer", "",
-	//	"List of IPs allowed to transfer (AXFR/IXFR)")
-
 	debug = flag.Bool("debug", false, "Verbose debugging")
-
-	//transferIPs []string
 )
 
 // Rough translation of the Google DNS over HTTP API
@@ -86,20 +77,6 @@ func main() {
 	if *defaultServer == "" {
 		log.Fatal("-default is required")
 	}
-	//transferIPs = strings.Split(*allowTransfer, ",")
-	//routes = make(map[string]string)
-	//if *routeList != "" {
-	//	for _, s := range strings.Split(*routeList, ",") {
-	//		s := strings.SplitN(s, "=", 2)
-	//		if len(s) != 2 {
-	//			log.Fatal("invalid -routes format")
-	//		}
-	//		if !strings.HasSuffix(s[0], ".") {
-	//			s[0] += "."
-	//		}
-	//		routes[s[0]] = s[1]
-	//	}
-	//}
 
 	udpServer := &dns.Server{Addr: *address, Net: "udp"}
 	tcpServer := &dns.Server{Addr: *address, Net: "tcp"}
@@ -125,72 +102,10 @@ func main() {
 }
 
 func route(w dns.ResponseWriter, req *dns.Msg) {
-	//if len(req.Question) == 0 || !allowed(w, req) {
-	//	dns.HandleFailed(w, req)
-	//	return
-	//}
-	//for name, addr := range routes {
-	//	if strings.HasSuffix(req.Question[0].Name, name) {
-	//		proxy(addr, w, req)
-	//		return
-	//	}
-	//}
 	proxy(*defaultServer, w, req)
 }
 
-//func isTransfer(req *dns.Msg) bool {
-//	for _, q := range req.Question {
-//		switch q.Qtype {
-//		case dns.TypeIXFR, dns.TypeAXFR:
-//			return true
-//		}
-//	}
-//	return false
-//}
-
-//func allowed(w dns.ResponseWriter, req *dns.Msg) bool {
-//	if !isTransfer(req) {
-//		return true
-//	}
-//	remote, _, _ := net.SplitHostPort(w.RemoteAddr().String())
-//	for _, ip := range transferIPs {
-//		if ip == remote {
-//			return true
-//		}
-//	}
-//	return false
-//}
-
 func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) {
-	var err error
-	//transport := "udp"
-	//if _, ok := w.RemoteAddr().(*net.TCPAddr); ok {
-	//	transport = "tcp"
-	//}
-	//if isTransfer(req) {
-	//	if transport != "tcp" {
-	//		dns.HandleFailed(w, req)
-	//		return
-	//	}
-	//	t := new(dns.Transfer)
-	//	c, err := t.In(req, addr)
-	//	if err != nil {
-	//		dns.HandleFailed(w, req)
-	//		return
-	//	}
-	//	if err = t.Out(w, req, c); err != nil {
-	//		dns.HandleFailed(w, req)
-	//		return
-	//	}
-	//	return
-	//}
-	//c := &dns.Client{Net: "tcp"}
-	//resp, _, err := c.Exchange(req, addr)
-	//if err != nil {
-	//	dns.HandleFailed(w, req)
-	//	return
-	//}
-
 	httpreq, err := http.NewRequest(http.MethodGet, *defaultServer, nil)
 	if err != nil {
 		log.Errorln("Error setting up request:", err)
@@ -201,7 +116,6 @@ func proxy(addr string, w dns.ResponseWriter, req *dns.Msg) {
 	qry := httpreq.URL.Query()
 	qry.Add("name", req.Question[0].Name)
 	qry.Add("type", fmt.Sprintf("%v", req.Question[0].Qtype))
-	// qry.Add("cd", cdFlag) // Google DNS-over-HTTPS requires CD to be true - don't set it at all
 	if len(*subnet) > 0 {
 		qry.Add("edns_client_subnet", *subnet)
 	}
